@@ -1,0 +1,1915 @@
+{
+  "name": "StudyMate AI — PDF Study Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "72e9fc2a-50ed-494c-a2d9-b7a660d78775",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -192,
+        96
+      ],
+      "webhookId": "c57f0863-73e5-4734-81be-0ed914508efd",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.message?.document?.mime_type ?? '' }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ ($json.message?.document?.file_name ?? '').toLowerCase() }}",
+              "rightValue": ".pdf",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b6b6ce9e-4012-4259-9795-2ebe3c3a1105",
+      "name": "Is PDF Upload?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.document.file_id }}",
+        "additionalFields": {
+          "mimeType": "application/pdf"
+        }
+      },
+      "id": "a1e8fa7c-04ed-434f-b271-8629d6158ea3",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        176
+      ],
+      "webhookId": "76e1bb1e-8da6-4191-a7e1-9a208beee05d",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.message?.text ?? '').trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f989ff7d-b9b9-44d7-a6e3-d35f1c241ee6",
+      "name": "Is Text Question?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chat_id",
+              "lookupValue": "={{ String($('Telegram Trigger').item.json.message.chat.id) }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "7af23917-bfa6-4a28-bdf4-8de3cae8f126",
+      "name": "Get Saved PDF",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1584,
+        1104
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "I can only read PDF files and text questions. Please send your notes as a PDF, or type a question about them.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "656bb6c6-f740-48f1-b4c7-281738ba7c3e",
+      "name": "Reply: Unsupported Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1536,
+        944
+      ],
+      "webhookId": "0daf1eab-1fdd-4a21-a47f-a801d2a9ce35",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Sorry, I could not download or read that PDF. It may be larger than 20 MB, password-protected, or damaged. Please try a smaller, text-based PDF.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "7218f7bd-6b7b-497d-90fc-e21db712a3d5",
+      "name": "Reply: PDF Could Not Be Read",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        272
+      ],
+      "webhookId": "451b000d-ff02-4dcf-8c3a-5008ec60c2a1",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "id": "bdc41543-4002-472e-9da4-e14f7051794a",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.2,
+      "position": [
+        1968,
+        96
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "chat_id",
+              "type": "string",
+              "value": "={{ String($('Telegram Trigger').item.json.message.chat.id) }}"
+            },
+            {
+              "id": "a2",
+              "name": "document_name",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.document.file_name || 'Untitled.pdf' }}"
+            },
+            {
+              "id": "a3",
+              "name": "uploaded_at",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "a4",
+              "name": "pdf_text",
+              "type": "string",
+              "value": "={{ String($json.text ?? '').replace(/\\s+/g, ' ').trim().slice(0, 45000) }}"
+            },
+            {
+              "id": "a5",
+              "name": "text_length",
+              "type": "number",
+              "value": "={{ String($json.text ?? '').replace(/\\s+/g, ' ').trim().length }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2495c4b4-c8e1-458a-a2f8-69b8e785c7a4",
+      "name": "Prepare Document Record",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2192,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.text_length }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "94a84495-fd8f-4b9c-94b6-1a9972474c95",
+      "name": "Has Readable Text?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2416,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "document_name": "={{ $json.document_name }}",
+            "uploaded_at": "={{ $json.uploaded_at }}",
+            "pdf_text": "={{ $json.pdf_text }}",
+            "text_length": "={{ $json.text_length }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "document_name",
+              "displayName": "document_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uploaded_at",
+              "displayName": "uploaded_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pdf_text",
+              "displayName": "pdf_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text_length",
+              "displayName": "text_length",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "efe03248-0b5d-4384-bb57-c27b92c047da",
+      "name": "Save PDF Text to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2640,
+        -48
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Your notes are saved: {{ $('Prepare Document Record').item.json.document_name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}{{ $('Prepare Document Record').item.json.text_length > 45000 ? '\\n(Note: the PDF is long, so only the first 45,000 characters were saved.)' : '' }}\n\nAsk me anything about it, or try:\n/summary - summarize my PDF\n/explain &lt;topic&gt; - explain in simple English\n/mcq - 5 practice MCQs\n/viva - 5 viva questions\n/revision - revision notes + exam questions\n\nSending a new PDF replaces this one.",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "84528419-5a3b-4535-af72-4d9e20cb00aa",
+      "name": "Reply: PDF Saved",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2864,
+        -48
+      ],
+      "webhookId": "ebb8e023-9f53-4984-a0e9-92b3a18678a5",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "I could not find readable text in that PDF. It may be a scanned image. Please send a text-based PDF (one where you can select and copy the text).",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "5bc566f3-c2c4-4a66-846c-5f78aac44787",
+      "name": "Reply: PDF Has No Text",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2640,
+        144
+      ],
+      "webhookId": "820de54e-972c-4f2d-b44f-b3531b815691",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ String($json.pdf_text ?? '').trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b99db5d7-e3f5-432f-9baa-0a0273029c3e",
+      "name": "Has Saved PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Student request: {{ $('Telegram Trigger').item.json.message.text }}\n\nDocument name: {{ $json.document_name }}\n\n=== STUDY NOTES START ===\n{{ $json.pdf_text }}\n=== STUDY NOTES END ===",
+        "options": {
+          "systemMessage": "You are StudyMate AI, a friendly study assistant for students on Telegram.\n\nRULES\n- Use the student's uploaded notes (between STUDY NOTES START and END) as your primary source.\n- If the answer is not in the notes, say clearly: \"I could not find this in your document.\" You may then add a short general hint, clearly labelled as \"General knowledge (not from your notes)\". Never invent facts and present them as coming from the notes.\n- Keep replies concise and easy to read on a phone: short paragraphs, simple numbered or dashed lists. Stay under 3000 characters.\n- Write PLAIN TEXT only. Do not use Markdown symbols like ** or #, and do not use HTML tags.\n\nCOMMANDS (also accept the same requests in normal language)\n- /start or /help: briefly greet the student and list the commands below.\n- /summary or \"summarize my PDF\": a short summary with the key points.\n- /explain <topic> or \"explain ...\": explain that topic in simple English with a small example.\n- /mcq: 5 multiple-choice questions. For each: the question, options A-D, the correct answer, and a one-line explanation.\n- /viva: 5 viva (oral exam) questions, each with a short model answer.\n- /revision: short revision notes, then a list of important exam questions.\n- Any other text: answer it as a question about the notes.",
+          "maxIterations": 3
+        }
+      },
+      "id": "360e627e-1e0d-4870-95f2-386e83f6d52a",
+      "name": "StudyMate AI Tutor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2032,
+        848
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3
+        }
+      },
+      "id": "65d68108-1a80-476a-a4df-630957a8bad2",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2112,
+        1072
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Welcome to StudyMate AI! I do not have any notes from you yet. Please upload your notes as a PDF file, then ask me questions or use /summary, /explain, /mcq, /viva or /revision.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "510184b7-106c-4015-bcf5-f9a2b55f4f4c",
+      "name": "Reply: Please Upload a PDF",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2096,
+        1248
+      ],
+      "webhookId": "cf34f2f2-ff50-4f15-9e46-72623b543867",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Sorry, the AI service is busy or unavailable right now. Please try again in a minute.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2e717811-f92a-4497-b5e8-8ccd5a1babd9",
+      "name": "Reply: AI Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2384,
+        1056
+      ],
+      "webhookId": "e3fef8ba-4012-4e4b-98c8-176dbcb1ec2b",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ (String($json.output ?? '').trim() || 'Sorry, I could not generate an answer this time. Please rephrase your question and try again.').slice(0, 3900).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "b26bf029-04a2-41f6-854c-4e03a49516ae",
+      "name": "Reply: AI Answer",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2384,
+        864
+      ],
+      "webhookId": "552f9dc6-7e27-4f9c-9faf-d920a350aa8f",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1225542196,
+          "mode": "list",
+          "cachedResultName": "QuizState",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=1225542196"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chat_id",
+              "lookupValue": "={{ String($('Telegram Trigger').first().json.message.chat.id) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1392,
+        496
+      ],
+      "id": "d13856f5-a3e8-4f67-b41c-b0bfbd119083",
+      "name": "Get Quiz State",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "=/quiz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "61f346aa-9613-4617-b52d-3c323c050b79"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "f8c4d16c-f4ac-4e62-8aa6-232598345eee",
+                    "leftValue": "={{ $json.message.text.trim().toUpperCase() }}",
+                    "rightValue": "^[A-D]$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        1168,
+        400
+      ],
+      "id": "8e2485f5-03a3-4ca6-936e-756c5f39f5e6",
+      "name": "Route Quiz Messages"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chat_id",
+              "lookupValue": "={{ String($('Telegram Trigger').first().json.message.chat.id) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1328,
+        144
+      ],
+      "id": "d429a55e-553f-4f02-89a9-5eed7023da2b",
+      "name": "Get Saved PDF for Quiz",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "f18f7b64-e6ec-4808-9a2e-180292e051d5",
+              "leftValue": "={{ $json.pdf_text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1872,
+        64
+      ],
+      "id": "3afceb9f-f16b-4f80-9af3-b3e1652c3fef",
+      "name": "Has PDF for Quiz?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are StudyMate AI, an educational quiz generator.\n\nCreate exactly 5 multiple-choice questions using ONLY the PDF text provided below.\n\nRules:\n1. Each question must have four options: A, B, C, and D.\n2. Only one option must be correct.\n3. Include a short explanation for the correct answer.\n4. Do not use facts outside the provided PDF text.\n5. Questions must be clear and suitable for college students.\n6. Return valid JSON only. Do not include Markdown code fences or introductory text.\n\nUse exactly this JSON structure:\n{\n  \"questions\": [\n    {\n      \"question\": \"Question text\",\n      \"options\": {\n        \"A\": \"Option A\",\n        \"B\": \"Option B\",\n        \"C\": \"Option C\",\n        \"D\": \"Option D\"\n      },\n      \"correct_answer\": \"A\",\n      \"explanation\": \"Explanation based on the PDF\"\n    }\n  ]\n}\n\nPDF TEXT:\n{{ $('Select Latest PDF').first().json.pdf_text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2176,
+        -112
+      ],
+      "id": "090750b9-9c86-4cd2-9b25-78ca81e5a4d2",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\n\n// 1. Extract Gemini's response text\nconst raw = item.content?.parts?.[0]?.text;\n\nif (!raw) {\n  throw new Error(\n    'Gemini response text not found. Check the Message a model output.'\n  );\n}\n\n// 2. Remove Markdown code fences if present\nconst cleaned = raw\n  .replace(/^```json\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/\\s*```$/, '')\n  .trim();\n\n// 3. Parse the JSON response\nlet parsed;\n\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (error) {\n  throw new Error(\n    'Gemini returned invalid JSON: ' + error.message\n  );\n}\n\n// 4. Check that exactly five questions exist\nif (\n  !Array.isArray(parsed.questions) ||\n  parsed.questions.length !== 5\n) {\n  throw new Error(\n    'Expected exactly 5 questions. Received: ' +\n    (parsed.questions?.length ?? 0)\n  );\n}\n\n// 5. Validate and repair each question\nfor (let i = 0; i < parsed.questions.length; i++) {\n  const q = parsed.questions[i];\n\n  if (!q || typeof q !== 'object') {\n    throw new Error(`Question ${i + 1} is not an object.`);\n  }\n\n  // Ensure options is an object\n  if (!q.options || typeof q.options !== 'object') {\n    throw new Error(\n      `Question ${i + 1} has missing or invalid options.`\n    );\n  }\n\n  const options = q.options;\n\n  // Repair malformed option keys.\n  // Preserve A, B, and C; use an unexpected key for D\n  // when D is missing.\n  if (!options.D) {\n    const malformedKey = Object.keys(options).find(\n      key => !['A', 'B', 'C'].includes(key)\n    );\n\n    if (malformedKey) {\n      options.D = options[malformedKey];\n      delete options[malformedKey];\n    }\n  }\n\n  // Clean option text\n  for (const key of ['A', 'B', 'C', 'D']) {\n    if (options[key] !== undefined) {\n      options[key] = String(options[key]).trim();\n    }\n  }\n\n  // Normalize the correct answer\n  let answer = String(q.correct_answer ?? '')\n    .replace(/[\"'`]/g, '')\n    .trim()\n    .toUpperCase();\n\n  // Accept values like \"B.\" or \"Answer: B\"\n  const answerMatch = answer.match(/\\b([A-D])\\b/);\n  q.correct_answer = answerMatch ? answerMatch[1] : '';\n\n  // Validate the question\n  if (\n    !q.question ||\n    !options.A ||\n    !options.B ||\n    !options.C ||\n    !options.D ||\n    !['A', 'B', 'C', 'D'].includes(q.correct_answer)\n  ) {\n    throw new Error(\n      `Invalid question ${i + 1}: ` +\n      JSON.stringify(q)\n    );\n  }\n\n  q.question = String(q.question).trim();\n  q.explanation = String(q.explanation ?? '').trim();\n}\n\n// 6. Prepare quiz state for Google Sheets\nconst chatId = String(\n  $('Telegram Trigger').first().json.message.chat.id\n);\n\nreturn [\n  {\n    json: {\n      chat_id: chatId,\n      questions_json: JSON.stringify(parsed.questions),\n      current_question: 0,\n      score: 0,\n      total_questions: 5,\n      status: 'active',\n      last_answer: ''\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        -112
+      ],
+      "id": "2f653803-2643-4b85-9f6c-2422bc894a14",
+      "name": "Parse Quiz JSON"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1225542196,
+          "mode": "list",
+          "cachedResultName": "QuizState",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=1225542196"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "questions_json": "={{ $json.questions_json }}",
+            "current_question": "={{ $json.current_question }}",
+            "score": "={{ $json.score }}",
+            "total_questions": "={{ $json.total_questions }}",
+            "status": "={{ $json.status }}",
+            "last_answer": "={{ $json.last_answer }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "questions_json",
+              "displayName": "questions_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_question",
+              "displayName": "current_question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_questions",
+              "displayName": "total_questions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_answer",
+              "displayName": "last_answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2880,
+        -112
+      ],
+      "id": "bd1ceefc-dac4-4080-85c2-e1b9622fa743",
+      "name": "Save Quiz State",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse Quiz JSON').first().json.chat_id }}",
+        "text": "={{ $('Format First Question').first().json.reply_text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        -48
+      ],
+      "id": "eb5cbb40-7aa8-4c7f-8903-9b58721a0c0a",
+      "name": "Send a text message",
+      "webhookId": "f6c4a5dd-289a-40b2-be8a-4a0f384b376d",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $('Parse Quiz JSON').first().json;\nconst questions = JSON.parse(state.questions_json);\nconst q = questions[0];\n\nreturn [{\n  json: {\n    chat_id: state.chat_id,\n    reply_text:\n      `🧠 StudyMate Quiz — Question 1/5\\n\\n` +\n      `${q.question}\\n\\n` +\n      `A) ${q.options.A}\\n` +\n      `B) ${q.options.B}\\n` +\n      `C) ${q.options.C}\\n` +\n      `D) ${q.options.D}\\n\\n` +\n      `Reply with A, B, C, or D.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3168,
+        -128
+      ],
+      "id": "2bcbab99-0bda-4cfd-bd8c-2142fe4fe469",
+      "name": "Format First Question"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "📚 Please upload a readable PDF first, then send /quiz to start your quiz.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        208
+      ],
+      "id": "4a83b0be-a0ee-4cf0-95ef-afed5f233770",
+      "name": "Reply: Please Upload PDF",
+      "webhookId": "af7e9e87-2cb1-4c73-b175-e9317b9ae7b9",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "4184b62d-184e-4d2c-b41e-95f1af9965a3",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "active",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1648,
+        512
+      ],
+      "id": "2efdc1db-cab6-413a-a2bf-c1b7fd2ec688",
+      "name": "Quiz Active?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $input.first().json;\n\nif (state.status !== 'active') {\n  throw new Error('No active quiz found.');\n}\n\nconst questions = JSON.parse(state.questions_json);\nconst index = Number(state.current_question);\nconst previousScore = Number(state.score);\nconst total = Number(state.total_questions);\n\nconst answer = String(\n  $('Telegram Trigger').first().json.message.text\n).trim().toUpperCase();\n\nif (!['A', 'B', 'C', 'D'].includes(answer)) {\n  throw new Error('Please answer using A, B, C, or D.');\n}\n\nconst question = questions[index];\n\nif (!question) {\n  throw new Error('The current quiz question could not be found.');\n}\n\nconst correct = answer === question.correct_answer;\nconst score = previousScore + (correct ? 1 : 0);\nconst nextIndex = index + 1;\nconst finished = nextIndex >= total;\n\nlet reply =\n  `${correct ? '✅ Correct!' : '❌ Incorrect.'}\\n` +\n  `Correct answer: ${question.correct_answer}\\n` +\n  `${question.explanation}\\n\\n`;\n\nif (finished) {\n  reply +=\n    `🏆 Quiz completed!\\n` +\n    `Final score: ${score}/${total}\\n` +\n    `Percentage: ${Math.round((score / total) * 100)}%\\n\\n` +\n    `Send /quiz to try again.`;\n} else {\n  const next = questions[nextIndex];\n\n  reply +=\n    `🧠 Question ${nextIndex + 1}/${total}\\n\\n` +\n    `${next.question}\\n\\n` +\n    `A) ${next.options.A}\\n` +\n    `B) ${next.options.B}\\n` +\n    `C) ${next.options.C}\\n` +\n    `D) ${next.options.D}\\n\\n` +\n    `Reply with A, B, C, or D.`;\n}\n\nreturn [{\n  json: {\n    chat_id: String(state.chat_id),\n    questions_json: state.questions_json,\n    current_question: nextIndex,\n    score,\n    total_questions: total,\n    status: finished ? 'completed' : 'active',\n    last_answer: answer,\n    reply_text: reply\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        432
+      ],
+      "id": "785606f3-3f37-4d49-a0d7-98e6ec02424f",
+      "name": "Check Quiz Answer"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1225542196,
+          "mode": "list",
+          "cachedResultName": "QuizState",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=1225542196"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "questions_json": "={{ $json.questions_json }}",
+            "current_question": "={{ $json.current_question }}",
+            "score": "={{ $json.score }}",
+            "total_questions": "={{ $json.total_questions }}",
+            "status": "={{ $json.status }}",
+            "last_answer": "={{ $json.last_answer }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "questions_json",
+              "displayName": "questions_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_question",
+              "displayName": "current_question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_questions",
+              "displayName": "total_questions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_answer",
+              "displayName": "last_answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2288,
+        432
+      ],
+      "id": "bb86ecfc-b7ec-4e0c-96f8-8ccedef87e77",
+      "name": "Update Quiz State",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Check Quiz Answer').first().json.chat_id }}",
+        "text": "={{ $('Check Quiz Answer').first().json.reply_text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2640,
+        448
+      ],
+      "id": "7b803516-ba35-4e2e-8e50-3a3a74037d8d",
+      "name": "Send Quiz Feedback",
+      "webhookId": "26b61c70-7a15-4bcf-b6df-99a2018cc8c9",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "No active quiz found. Upload your PDF and send /quiz to start a new quiz.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2048,
+        624
+      ],
+      "id": "07d8c259-702d-4946-a4d3-76251603ea10",
+      "name": "Reply: No Active Quiz",
+      "webhookId": "ee8c8389-4db4-41f6-9f05-f456956ba6e9",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst rows = $input.all().map(item => item.json);\n\nif (rows.length === 0) {\n  return [{ json: { pdf_text: '', document_name: '' } }];\n}\n\nrows.sort((a, b) => {\n  return new Date(b.uploaded_at).getTime()\n       - new Date(a.uploaded_at).getTime();\n});\n\nreturn [{ json: rows[0] }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        144
+      ],
+      "id": "7e8def87-0555-4dd6-b697-16261e639a56",
+      "name": "Select Latest PDF"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 597567475,
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=597567475"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chat_id",
+              "lookupValue": "={{ String($('Telegram Trigger').first().json.message.chat.id) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        16
+      ],
+      "id": "e094d29b-8f72-4fc0-b33d-94c1619c226d",
+      "name": "Find User",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "84074f4c-22e9-4650-b350-bcc6c49a2719",
+              "leftValue": "={{ !!$json.chat_id }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        480,
+        0
+      ],
+      "id": "ffde7a15-01b9-48e4-bc4d-b18cfdd9cdc0",
+      "name": "Is Returning User?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "👋 Hello! Welcome to StudyMate AI!  I'm your personal AI study assistant. I can help you learn from your PDFs and prepare for exams.  📚 **How to use me**  📄 Upload a PDF — I'll save your study notes.  📝 `/summary` — Get a short summary of your notes.  🧠 `/quiz` — Take a 5-question MCQ quiz based on your PDF.  💡 `/explain topic` — Learn a topic with a simple explanation and example.  🎤 `/viva` — Practice viva questions with answers.  🔄 `/revision` — Get quick revision notes and important questions.  ❓ You can also ask me questions about your study material.  **Ready to start?** Upload your first PDF or send a command!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        240
+      ],
+      "id": "8ef76c23-9c01-47b2-b8f1-d0225c819c06",
+      "name": "Welcome New User",
+      "webhookId": "56da74ed-f38c-417f-a779-e5456c509471",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "👋 Welcome back to StudyMate AI!  What would you like to do today?  📄 Upload a new PDF 📝 Get a summary of your notes — `/summary` 🧠 Start a quiz — `/quiz` 💡 Explain a topic — `/explain topic` 🎤 Practice viva questions — `/viva` 🔄 Revise important topics — `/revision`  You can also ask me any question about your study material.  **What shall we work on today?** 😊",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        -96
+      ],
+      "id": "1cd35e75-d749-452c-add4-bd9bd491f3bf",
+      "name": "Welcome Back",
+      "webhookId": "cba322be-8f59-4518-9060-6fefaa684b56",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZkHVS1NT2dGw51P4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "aee1c0f9-270b-47f3-bd4f-a59ffb4bd1e9"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        32,
+        96
+      ],
+      "id": "74220a65-f88e-4fa7-bea5-2593c0150d48",
+      "name": "Check Start Command"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0",
+          "mode": "list",
+          "cachedResultName": "StudyMate Documents",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 597567475,
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HlFOy9rtIMS4TRtpm38Ax_78IjJR937Dz0ewqdiREW0/edit#gid=597567475"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ String($('Telegram Trigger').first().json.message.chat.id) }}",
+            "first_name": "={{ $('Telegram Trigger').first().json.message.from.first_name || 'Student' }}",
+            "welcome_sent": "true",
+            "last_seen": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "welcome_sent",
+              "displayName": "welcome_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_seen",
+              "displayName": "last_seen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        816,
+        480
+      ],
+      "id": "3e3a11b9-18d8-4dbb-b1e6-37748b00269c",
+      "name": "Save New User",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PxAlKAsHUquxzRhR",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Start Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF Upload?": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Quiz Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: PDF Could Not Be Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Text Question?": {
+      "main": [
+        [
+          {
+            "node": "Get Saved PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Unsupported Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Saved PDF": {
+      "main": [
+        [
+          {
+            "node": "Has Saved PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare Document Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: PDF Could Not Be Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Document Record": {
+      "main": [
+        [
+          {
+            "node": "Has Readable Text?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Readable Text?": {
+      "main": [
+        [
+          {
+            "node": "Save PDF Text to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: PDF Has No Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save PDF Text to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Reply: PDF Saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Saved PDF?": {
+      "main": [
+        [
+          {
+            "node": "StudyMate AI Tutor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Please Upload a PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StudyMate AI Tutor": {
+      "main": [
+        [
+          {
+            "node": "Reply: AI Answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: AI Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "StudyMate AI Tutor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Quiz State": {
+      "main": [
+        [
+          {
+            "node": "Quiz Active?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Quiz Messages": {
+      "main": [
+        [
+          {
+            "node": "Get Saved PDF for Quiz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Quiz State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Text Question?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Saved PDF for Quiz": {
+      "main": [
+        [
+          {
+            "node": "Select Latest PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has PDF for Quiz?": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Please Upload PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse Quiz JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Quiz JSON": {
+      "main": [
+        [
+          {
+            "node": "Save Quiz State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Quiz State": {
+      "main": [
+        [
+          {
+            "node": "Format First Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format First Question": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quiz Active?": {
+      "main": [
+        [
+          {
+            "node": "Check Quiz Answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: No Active Quiz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Quiz Answer": {
+      "main": [
+        [
+          {
+            "node": "Update Quiz State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Quiz State": {
+      "main": [
+        [
+          {
+            "node": "Send Quiz Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Latest PDF": {
+      "main": [
+        [
+          {
+            "node": "Has PDF for Quiz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find User": {
+      "main": [
+        [
+          {
+            "node": "Is Returning User?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Returning User?": {
+      "main": [
+        [
+          {
+            "node": "Welcome Back",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Welcome New User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome New User": {
+      "main": [
+        [
+          {
+            "node": "Save New User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Start Command": {
+      "main": [
+        [
+          {
+            "node": "Find User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PDF Upload?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "bf70d1e5-81c8-49dd-87e5-01c336ba19d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8eb105323af856ae320918955eea467d06d71ad4b64ae7d69f3b21ba6db315c6"
+  },
+  "nodeGroups": [
+    {
+      "id": "911c7a1a-06bc-427a-8ed1-bca93531fbe8",
+      "name": "Save uploaded notes",
+      "nodeIds": [
+        "a1e8fa7c-04ed-434f-b271-8629d6158ea3",
+        "bdc41543-4002-472e-9da4-e14f7051794a",
+        "7218f7bd-6b7b-497d-90fc-e21db712a3d5",
+        "2495c4b4-c8e1-458a-a2f8-69b8e785c7a4",
+        "94a84495-fd8f-4b9c-94b6-1a9972474c95",
+        "efe03248-0b5d-4384-bb57-c27b92c047da",
+        "84528419-5a3b-4535-af72-4d9e20cb00aa",
+        "5bc566f3-c2c4-4a66-846c-5f78aac44787"
+      ],
+      "description": "Downloads the PDF, pulls out its text and stores it per chat, replacing older notes; tells the student if it fails"
+    },
+    {
+      "id": "a27ef5f6-a5b3-49e4-9b40-fd08fc55cfef",
+      "name": "Answer study questions",
+      "nodeIds": [
+        "7af23917-bfa6-4a28-bdf4-8de3cae8f126",
+        "b99db5d7-e3f5-432f-9baa-0a0273029c3e",
+        "360e627e-1e0d-4870-95f2-386e83f6d52a",
+        "65d68108-1a80-476a-a4df-630957a8bad2",
+        "b26bf029-04a2-41f6-854c-4e03a49516ae",
+        "2e717811-f92a-4497-b5e8-8ccd5a1babd9",
+        "510184b7-106c-4015-bcf5-f9a2b55f4f4c"
+      ],
+      "description": "Loads this chat's saved notes and has the AI answer, summarize or quiz; asks for a PDF if none is saved"
+    }
+  ],
+  "id": "ZgyheGeLM2CXz0Cr",
+  "tags": []
+}
